@@ -3132,6 +3132,9 @@ class CopyPaste(BaseTransform):
 
         # update masks and generate bboxes from updated masks
         composed_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
+        # Min and max values are inside the uint8 range, so cast it
+        # accordingly to the source image type
+        composed_mask = composed_mask.astype(src_img.dtype)
         updated_dst_masks = self._get_updated_masks(dst_masks, composed_mask)
         updated_dst_bboxes = updated_dst_masks.get_bboxes(type(dst_bboxes))
         assert len(updated_dst_bboxes) == len(updated_dst_masks)

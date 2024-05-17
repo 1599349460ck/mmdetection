@@ -29,6 +29,18 @@ class PipelineSwitchHook(Hook):
             # The dataset pipeline cannot be updated when persistent_workers
             # is True, so we need to force the dataloader's multi-process
             # restart. This is a very hacky approach.
+            # Make it compatible with MultiImageMixDataset
+            if hasattr(train_loader.dataset, 'dataset'):
+                # Set the loading pipeline to the identity function
+                # Keep it compatible with "scale_factor" key, which
+                # is not available otherwise.
+                train_loader.dataset.pipeline = Compose([lambda x: x])
+                # Rewrite the inner pipeline with the one given
+                train_loader.dataset.dataset.pipeline = \
+                    Compose(self.switch_pipeline)
+            else:
+                train_loader.dataset.pipeline = \
+                    Compose(self.switch_pipeline)
             train_loader.dataset.pipeline = Compose(self.switch_pipeline)
             if hasattr(train_loader, 'persistent_workers'
                        ) and train_loader.persistent_workers is True:

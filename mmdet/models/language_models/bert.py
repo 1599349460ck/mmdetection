@@ -55,10 +55,10 @@ def generate_masks_with_special_tokens_and_transfer_map(
                   device=input_ids.device).bool().unsqueeze(0).repeat(
                       bs, 1, 1))
     position_ids = torch.zeros((bs, num_token), device=input_ids.device)
-    previous_col = 0
+    previous_col = -1
     for i in range(idxs.shape[0]):
         row, col = idxs[i]
-        if (col == 0) or (col == num_token - 1):
+        if col == 0:
             attention_mask[row, col, col] = True
             position_ids[row, col] = 0
         else:
@@ -67,6 +67,9 @@ def generate_masks_with_special_tokens_and_transfer_map(
             position_ids[row, previous_col + 1:col + 1] = torch.arange(
                 0, col - previous_col, device=input_ids.device)
         previous_col = col
+
+        if i + 1 != idxs.shape[0] and idxs[i + 1][0] != idxs[i][0]:
+            previous_col = -1
 
     return attention_mask, position_ids.to(torch.long)
 
@@ -143,7 +146,8 @@ class BertModel(BaseModel):
             padding='max_length' if self.pad_to_max else 'longest',
             return_special_tokens_mask=True,
             return_tensors='pt',
-            truncation=True).to(device)
+            truncation=True,
+            add_special_tokens=kwargs.get("add_special_tokens", True)).to(device)
         input_ids = tokenized.input_ids
         if self.use_sub_sentence_represent:
             attention_mask, position_ids = \

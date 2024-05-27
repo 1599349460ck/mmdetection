@@ -162,7 +162,8 @@ class GroundingDINO(DINO):
                 [caption_string],
                 padding='max_length'
                 if self.language_model.pad_to_max else 'longest',
-                return_tensors='pt')
+                return_tensors='pt',
+                add_special_tokens=False)
             entities = original_caption
         else:
             if not original_caption.endswith('.'):
@@ -175,7 +176,8 @@ class GroundingDINO(DINO):
                 [original_caption],
                 padding='max_length'
                 if self.language_model.pad_to_max else 'longest',
-                return_tensors='pt')
+                return_tensors='pt',
+                add_special_tokens=False)
             tokens_positive, noun_phrases = run_ner(original_caption)
             entities = noun_phrases
             caption_string = original_caption
@@ -224,7 +226,8 @@ class GroundingDINO(DINO):
                     [original_caption],
                     padding='max_length'
                     if self.language_model.pad_to_max else 'longest',
-                    return_tensors='pt')
+                    return_tensors='pt',
+                    add_special_tokens=False)
                 positive_map_label_to_token, positive_map = \
                     self.get_positive_map(tokenized, tokens_positive)
 
@@ -281,7 +284,8 @@ class GroundingDINO(DINO):
                 caption_string, tokens_positive = self.to_plain_text_prompts(
                     original_caption_chunked[i])
             tokenized = self.language_model.tokenizer([caption_string],
-                                                      return_tensors='pt')
+                                                      return_tensors='pt',
+                                                      add_special_tokens=False)
             if tokenized.input_ids.shape[1] > self.language_model.max_tokens:
                 warnings.warn('Inputting a text that is too long will result '
                               'in poor prediction performance. '
@@ -439,7 +443,8 @@ class GroundingDINO(DINO):
                     [text_prompt],
                     padding='max_length'
                     if self.language_model.pad_to_max else 'longest',
-                    return_tensors='pt')
+                    return_tensors='pt',
+                    add_special_tokens=False)
                 new_tokens_positive = [
                     token_positive[label.item()] for label in gt_label
                 ]
@@ -477,7 +482,7 @@ class GroundingDINO(DINO):
                     positive_maps.append(positive_map)
                     new_text_prompts.append(caption_string)
 
-        text_dict = self.language_model(new_text_prompts)
+        text_dict = self.language_model(new_text_prompts, add_special_tokens=False)
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
 
@@ -553,7 +558,7 @@ class GroundingDINO(DINO):
             for b in range(len(text_prompts[0])):
                 text_prompts_once = [text_prompts[0][b]]
                 token_positive_maps_once = token_positive_maps[0][b]
-                text_dict = self.language_model(text_prompts_once)
+                text_dict = self.language_model(text_prompts_once, add_special_tokens=False)
                 # text feature map layer
                 if self.text_feat_map is not None:
                     text_dict['embedded'] = self.text_feat_map(
@@ -577,7 +582,7 @@ class GroundingDINO(DINO):
             is_rec_tasks = [False] * len(results_list)
         else:
             # extract text feats
-            text_dict = self.language_model(list(text_prompts))
+            text_dict = self.language_model(list(text_prompts), add_special_tokens=False)
             # text feature map layer
             if self.text_feat_map is not None:
                 text_dict['embedded'] = self.text_feat_map(
